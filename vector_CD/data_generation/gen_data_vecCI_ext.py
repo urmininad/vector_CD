@@ -757,17 +757,37 @@ def coarsen_graph(graph, N_array):
 				subgraph = graph[sum(N_array[:i]):sum(N_array[:i+1]),sum(N_array[:j]):sum(N_array[:j+1]),k]
 				count1 = np.count_nonzero(subgraph == '-->')
 				count2 = np.count_nonzero(subgraph == '<--')
+				count3 = np.count_nonzero(subgraph == 'o-o')
 				#print("----",count1,count2,"-----")
 				if count1>count2:
-					coarse_graph[i][j][k] = '-->'
+					# print(i," causes",j)
+					coarse_graph[i][j][k] = "-->"
+					if k == 0:
+						coarse_graph[j][i][k] = "<--"
 				elif count2>count1:
-					coarse_graph[i][j][k] = '<--'
+					# print(j," causes ",i)
+					coarse_graph[i][j][k] = "<--"
+					if k ==0 :
+						coarse_graph[j][i][k] = "-->"
 				else:
+					# print(i,j,"balance")
 					if count1==0:
-						coarse_graph[i][j][k] = ''
+						# print("AND zero count of directed edges")
+						if count3==0:
+							# print("AND zero of undirected edges")
+							coarse_graph[i][j][k] = ""
+							if k == 0:
+								coarse_graph[j][i][k] = ""
+						else:
+							# print("BUT non-zero of undirected edges")
+							coarse_graph[i][j][k] = "o-o"
+							if k == 0:
+								coarse_graph[j][i][k] = "o-o"
 					else:
 						# print("ambiguous")
-						coarse_graph[i][j][k] = 'o--o'
+						coarse_graph[i][j][k] = "o-o"
+						if k ==0:
+							coarse_graph[j][i][k] = "o-o"
 
 	return(coarse_graph)
 

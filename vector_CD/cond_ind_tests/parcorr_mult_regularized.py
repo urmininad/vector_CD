@@ -12,7 +12,8 @@ import warnings
 from sklearn.linear_model import LinearRegression
 from numpy.linalg import eigh, eigvalsh
 
-from independence_tests_base import CondIndTest
+# from . import independence_tests_base
+from .independence_tests_base import CondIndTest
 
 class ParCorrMult(CondIndTest):
     r"""Partial correlation test for multivariate X and Y.
@@ -559,7 +560,7 @@ class ParCorrMult(CondIndTest):
 
         else:
             raise NotImplementedError("Currently only"
-                                      "correlation_type == 'max_corr','gcm' implemented.")
+                                      "correlation_type == 'max_corr','gcm', 'linear_hsic' implemented.")
 
         # Adjust p-value for dimensions of x and y (conservative Bonferroni-correction)
         pval *= dim_x*dim_y
@@ -631,6 +632,18 @@ if __name__ == '__main__':
     from sklearn.linear_model import Ridge, Lasso, RidgeCV, MultiTaskLassoCV, ElasticNetCV, LassoLarsIC, MultiTaskElasticNetCV
     from sklearn.cross_decomposition import PLSRegression
     # import numpy as np
+    import timeit
+
+    #### For analytic GCM: X and Y must be univariate:
+    # correlation_type = 'gcm'
+    # Comment out significance, sig_blocklength and sig_samples
+
+    #### FOR GCM with Gaussian multiplier bootstrap, X and Y can be multivariate
+    # correlation_type = 'gcm_gcm'
+    # significance = 'shuffle_test',
+    # sig_blocklength=1,
+    # sig_samples=200
+
 
 
     seed = None
@@ -648,10 +661,10 @@ if __name__ == '__main__':
             # verbosity=5,
         )
 
-    dimxy = 20
-    dimz = 20
-    samples = 100
-    realizations = 500
+    dimxy = 10
+    dimz = 10
+    samples = 500
+    realizations = 100
     n_conf = dimz
     coef = 0.
     # coef = 0.3
