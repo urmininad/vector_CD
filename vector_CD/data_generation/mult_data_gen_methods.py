@@ -4,6 +4,7 @@ from .gen_data_vecCI_ext import Graph
 import numpy as np
 import math
 import os, time, sys
+import scipy
 from scipy import stats
 from sklearn.decomposition import PCA
 
@@ -255,7 +256,7 @@ def data_coarse_dag(data_gen,
 
 
     if nonstationary:
-        raise ValueError("No stationary model found: %s" % model)
+        raise ValueError("No stationary model found" )
 
     N = d_macro
     true_graph = true_graph_from_links(macro_links, tau_max)
@@ -636,7 +637,7 @@ def structural_causal_process_MRF_PCA(links, d_micro, T, cross_prob=0.5,
         for j in causal_order:
             for link_props in links[j]:
                 var, lag = link_props[0]
-                # coeff = link_props[1] ## TODO: CHECK coefficient matrix
+                # coeff = link_props[1] ##
                 func = link_props[2]
                 # print('LHS shape',data[t, j*d_micro:(j+1)*d_micro].shape)
                 # print('coeff_matrix shape', coeff_mats[j,var].shape)
@@ -653,8 +654,8 @@ def structural_causal_process_MRF_PCA(links, d_micro, T, cross_prob=0.5,
 
                 ############################
                 ### "ONLINE PCA-biasing" ###
-                ### TODO: But since V changes with t, this is non-stationary!!!!!
-                ### TODO: Other option: Compute the stationary distribution of each variable from SCM, and use their components_ matrix
+                ### But since V changes with t, data is non-stationary with online biasing!
+                ### Other option: Compute the stationary distribution of each variable from SCM, and use their components_ matrix
                 ############################
                 # if (t+lag)<d_micro:
                 #     V = np.eye(d_micro)
@@ -667,7 +668,7 @@ def structural_causal_process_MRF_PCA(links, d_micro, T, cross_prob=0.5,
 
     data = data[transient:]
 
-    # nonvalid = (np.any(np.isnan(data)) or np.any(np.isinf(data))) # TODO: stationarity check (see generate_nonlinear_contemp_timeseries in my code)
+    # nonvalid = (np.any(np.isnan(data)) or np.any(np.isinf(data)))
     if (mod1.check_stationarity(full_links)[0] == False or np.any(np.isnan(data)) or np.any(np.isinf(data)) or
         # np.max(np.abs(X)) > 1.e4 or
         np.any(np.abs(np.triu(np.corrcoef(data, rowvar=0), 1)) > 0.999)):
@@ -688,10 +689,6 @@ def structural_causal_process_MRF_PCA(links, d_micro, T, cross_prob=0.5,
         nonstationary = False
 
     return data, nonstationary#, full_links, coeff_mats
-
-
-
-
 
 def structural_causal_process_MRF(links, d_micro, T,
                         cross_prob=0.5,
@@ -757,7 +754,7 @@ def structural_causal_process_MRF(links, d_micro, T,
     ### Generate coeff matrix for cross_adjacencies
     ####################
     # NOTE: Between any pair of vars (i,j), a unique coeff matrix is drawn. So if i causes j at two different
-    #  lags, the same coeff_matrix will be used. (#TODO?)
+    #  lags, the same coeff_matrix will be used. (#modify?)
 
     coeff_mats = np.zeros((N,N, d_micro, d_micro))
     for j in causal_order: #range(N):
@@ -791,7 +788,7 @@ def structural_causal_process_MRF(links, d_micro, T,
         for j in causal_order:
             for link_props in links[j]:
                 var, lag = link_props[0]
-                # coeff = link_props[1] ## TODO: CHECK coefficient matrix
+                # coeff = link_props[1] #
                 func = link_props[2]
                 # print('LHS shape',data[t, j*d_micro:(j+1)*d_micro].shape)
                 data[t, j*d_micro:(j+1)*d_micro] += coeff_mats[j,var] @ func(data[t + lag, var*d_micro:(var+1)*d_micro])
@@ -816,8 +813,8 @@ def structural_causal_process_MRF(links, d_micro, T,
                         parent_ind = np.arange(var*d_micro, (var+1)*d_micro)[n]
                         full_links[child_ind] += [((parent_ind,lag),coeff_mats[j,var,m,n],func)]
 
-    # TODO: check_stationarity only works for linear
-    # TODO: Wrapper around sctrucal causal process: Pass full_links and noises (from line 382) to structural causal process?
+    # Warning: check_stationarity only works for linear
+    # TODO: Wrapper around structural_causal_process: Pass full_links and noises (from line 382) to structural causal process?
     # rand_weight_matrix_cross as callable OR even: Just take coeff mats as arguements? For the PCA experiments>.
 
     # nonvalid = (np.any(np.isnan(data)) or np.any(np.isinf(data))) # TODO: stationarity check (see generate_nonlinear_contemp_timeseries in my code)

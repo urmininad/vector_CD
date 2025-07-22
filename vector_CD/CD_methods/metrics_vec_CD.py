@@ -2,17 +2,21 @@ import sys, os
 import numpy as np
 import pickle, pickle
 
-
-folder_name = os.path.expanduser('~') + '/Documents/Python/Mult_CI_Tests/Interimresults_vecCI/'
+# base_path = os.path.dirname(os.path.abspath(__file__))
+if os.path.expanduser('~') == '/Users/urmininad':
+  folder_name = os.path.expanduser('~') + '/Documents/Python/Mult_CI_Tests/Interimresults_vecCI/'
+else:
+  print("Check if local path to saved interim results is correct in metrics_vec_CD.py")
+  folder_name = os.getcwd() + '/Interimresults_vecCI/'
 
 def get_counts(para_setup):
 
-    metrics = [ 'all_' + metric_type for metric_type in ['precision', 'recall']]    
-    metrics += [ 'adj_' + link_type + "_" + metric_type for link_type in ['anylink'] 
+    metrics = [ 'all_' + metric_type for metric_type in ['precision', 'recall']]
+    metrics += [ 'adj_' + link_type + "_" + metric_type for link_type in ['anylink']
                                                        for metric_type in ['precision', 'recall']]
-    # metrics +=  [ 'edgemarks_' + link_type + "_" + metric_type for link_type in ['contemp', 'anylink'] 
+    # metrics +=  [ 'edgemarks_' + link_type + "_" + metric_type for link_type in ['contemp', 'anylink']
     #                                                    for metric_type in ['precision', 'recall']]
-    # metrics +=  [ metric_type + "_" + link_type for link_type in ['anylink'] 
+    # metrics +=  [ metric_type + "_" + link_type for link_type in ['anylink']
     #                             for metric_type in ['unoriented', 'conflicts']]
 
     metrics += ['computation_time']
@@ -73,7 +77,7 @@ def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, b
 
     pred_graphs = orig_pred_graphs
     true_graphs = orig_true_graphs
-    
+
     metrics_dict['adj_anylink_precision'] = (((true_graphs!="")*(pred_graphs!="")*any_mask).sum(axis=(1,2,3)),
                             ((pred_graphs!="")*any_mask).sum(axis=(1,2,3)) )
     metrics_dict['adj_anylink_recall'] = (((true_graphs!="")*(pred_graphs!="")*any_mask).sum(axis=(1,2,3)),
@@ -81,8 +85,8 @@ def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, b
     metrics_dict['all_precision'] = ((((true_graphs=="-->")*(pred_graphs=="-->")+(true_graphs=="<--")*(pred_graphs=="<--"))*any_mask).sum(axis=(1,2,3)),
                             ((pred_graphs!="")*any_mask).sum(axis=(1,2,3)) )
     metrics_dict['all_recall'] = ((((true_graphs=="-->")*(pred_graphs=="-->")+(true_graphs=="<--")*(pred_graphs=="<--"))*any_mask).sum(axis=(1,2,3)),
-                            ((true_graphs!="")*any_mask).sum(axis=(1,2,3)) )  
-    
+                            ((true_graphs!="")*any_mask).sum(axis=(1,2,3)) )
+
     for metric in metrics_dict.keys():
 
         numerator, denominator = metrics_dict[metric]
@@ -97,4 +101,3 @@ def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, b
     metrics_dict['computation_time'] = (np.mean(np.array(computation_time)), np.percentile(np.array(computation_time), [5, 95]))
 
     return metrics_dict
-    
