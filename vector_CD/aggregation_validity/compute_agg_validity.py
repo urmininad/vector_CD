@@ -1,32 +1,11 @@
+## This script is called by submit_agg_validity.py to compute aggregation consistency scores
+
 import numpy as np
-import math
-
-
-# from itertools import combinations, product
-# from collections import defaultdict, OrderedDict, Counter
-# import matplotlib
-# from matplotlib import pyplot as plt
-# from numba import jit
-# from scipy import stats, linalg
-
 import sys, os, time, psutil
 import pickle
 import mpi
-from copy import deepcopy
-from matplotlib import pyplot
-import socket
-
-# from tigramite.pcmci import PCMCI
-# from tigramite.pcmci_base import PCMCIbase
-# from tigramite import plotting as tp
-# from tigramite.toymodels import structural_causal_processes as toys
-# from tigramite.independence_tests.oracle_conditional_independence import OracleCI
-# from tigramite.independence_tests.parcorr import ParCorr
-# from tigramite.independence_tests.parcorr_mult import ParCorrMult
-# import tigramite.data_processing as pp
-
-import funcs as ff
-import data_generation.mult_data_gen_methods as mech
+from . import funcs as ff
+import vector_CD.data_generation.mult_data_gen_methods as mech
 import metrics_agg as met
 
 # --------------------------
@@ -35,30 +14,23 @@ try:
   num_cpus = int(arg[1])
   samples = int(arg[2])
   config_list = list(arg)[3:]
-  # print config_list
   num_configs = len(config_list)
 except:
   arg = ''
   num_cpus = 10
   samples = 10
   config_list = ['avg-mrf_ts-4-5-100-0.4-0.2-.0-0.01-1-parcorr_gcm_gmb-0.3-0.5-1.0-None'] #["5-3-0.1-0.4-0.1-500-parcorr_gcm_gmb-ind-neg"]
-  # print(config_list)
+# --------------------------
 
 num_configs = len(config_list)
 print(num_configs, "number of configs")
 time_start = time.time()
 
-
-
-
-
 def calculate(para_setup):
 
   para_setup_string, sam = para_setup
-  # print('para_setup_string',para_setup_string)
   paras = para_setup_string.split('-') #para_setup_string[0].split('-')
   paras = [w.replace("'","") for w in paras]
-  # print('paras',len(paras))
 
   # Parameters
   #------------
@@ -82,22 +54,8 @@ def calculate(para_setup):
   else:
     pca_weight = float(paras[14])
 
-
-  # if method == 'comm':
-  #   if d_micro %2: # odd because remainder non-zero
-  #     N_fine = [int(d_micro/2)]+ [int(d_micro/2)+1] + [d_micro]*(d_macro-1)
-  #   else:             #even
-  #     N_fine =  [int(d_micro/2)]*2 + [d_micro]*(d_macro-1)
-  # else:
-  #   N_fine = None
-
   computation_time_start = time.time()
 
-  ################ OLD WAY (Only for Coarse DAG) ####################
-  # score_list,shd_list = ff.validity_score_list(N_array, min_coeff, max_coeff, step_size, T, method, pc_alpha, N_fine, neg_coeff, ci_test)
-  #############################################
-
-  ################ NEW WAY (For DAG b/w MRFs) ####################
 
   # Generate and Aggregate Data
   #--------------------------------------
@@ -122,44 +80,23 @@ def calculate(para_setup):
       # Aggregate data
       data_agg, vector_vars = ff.agg_data_by_method(agg_method, data, d_micro, d_macro)
 
-      # Run CD and compute independence score
-      #--------------------------------------
-
-      # PC-alg on aggregated data
-      # sepsets,p_matrix,graph,dag = ff.pc_alg(data_agg,pc_alpha,vector_vars = vector_vars,ci_test=ci_test)
-
-      # # Score computation
-      # score,den = ff.comp_ind_score(data,p_matrix,sepsets,N_array,pc_alpha, ci_test)
-      # shd_to_true_graph = ff.shd(true_graph,dag)
-      # if den == 0: #np.isnan(score/den):
-      #   sam+=1000
-      # else:
-      #   break
-
 
       # Run Time-Series CD (with nontimeseries as special case)
       #---------------------------------------
 
       # PC(MCI) on aggregated data
       sepsets,p_matrix,graph,dag,condsets = ff.pc_mci(data_agg, pc_alpha, tau_max,vector_vars = vector_vars,ci_test=ci_test)
-      # print("condsets",condsets)
-      print("sepsets",sepsets)
 
-      ## Score computation
+      ## Aggregation consistency score computation
 
       ind_score,den_ind = ff.gen_comp_ind_score(data,p_matrix,sepsets, d_macro, d_micro, pc_alpha, ci_test)
       dep_score,den_dep = ff.gen_comp_dep_score(data, graph, condsets, d_macro, d_micro, pc_alpha, ci_test)
       shd_to_true_graph = ff.shd(true_graph,dag)
 
-
       if den_ind == 0 or den_dep ==0: #np.isnan(score/den):
         sam+=1000
       else:
         break
-
-
-      #############################################
-
 
   computation_time_end = time.time()
   computation_time = computation_time_end - computation_time_start
@@ -222,8 +159,6 @@ def master():
 
 
     config_chunks = split(job_list, num_jobs)
-
-
     print("num_tasks %s" % num_tasks)
     print("num_jobs %s" % num_jobs)
 
@@ -250,10 +185,6 @@ def master():
 
     for conf in list(all_configs.keys()):
 
-        # all_configs[conf]['score_list'] = np.zeros((samples, ) + all_configs[conf]['results'][0]['score_list'].shape, dtype='float')
-        # all_configs[conf]['shd_list'] = np.zeros((samples, ) + all_configs[conf]['results'][0]['shd_list'].shape, dtype='float')
-
-
         all_configs[conf]['graphs'] = np.zeros((samples, ) + all_configs[conf]['results'][0]['graph'].shape, dtype='<U3')
         all_configs[conf]['true_graphs'] = np.zeros((samples, ) + all_configs[conf]['results'][0]['true_graph'].shape, dtype='<U3')
         all_configs[conf]['shds'] = np.zeros((samples, ) + all_configs[conf]['results'][0]['shd'].shape)
@@ -279,10 +210,19 @@ def master():
             file_name = os.path.expanduser('~') +'/work/bd1083/Interim_results/agg_validity/%s' %(conf)
 
         elif os.path.expanduser('~') == '/Users/urmininad':
-            # file_name = os.path.expanduser('~') + '/Documents/Python/aggregation_validity/Interim_results/%s' %(conf)
             file_name = os.path.expanduser('~') + '/Documents/Python/aggregation_validity/new_interim_results/%s' %(conf)
             file_name_met = os.path.expanduser('~') + '/Documents/Python/aggregation_validity/metrics/%s' %(conf)
 
+        else:
+            print("New folder to save results created, change path if needed")
+            newpath = os.getcwd() + '/Interimresults_agg_validity'
+            if not os.path.exists(newpath):
+                os.makedirs(newpath)
+            newpath_met = os.getcwd() + '/metrics_agg_validity'
+            if not os.path.exists(newpath_met):
+                os.makedirs(newpath_met)
+            file_name = os.getcwd()+'/Interimresults_agg_validity/%s' %(conf)
+            file_name_met = os.getcwd()+'/metrics_agg_validity/%s' %(conf)
 
         print("dump ", file_name.replace("'", "").replace('"', '') + '.dat')
         file = open(file_name.replace("'", "").replace('"', '') + '.dat', 'wb')
@@ -292,11 +232,6 @@ def master():
         # Directly compute metrics and save in much smaller dict
         para_setup_str = tuple(conf.split("-"))
         metrics = met.get_counts(para_setup_str)
-
-        # metrics['score_mean'],metrics['score_std_error'] = ff.std_error(np.array([all_configs[conf]['ind_scores']]))
-        # metrics['shd_mean'],metrics['shd_std_error'] = ff.std_error(np.array([all_configs[conf]['shds']]))
-        #metrics['time_mean'],metrics['time_std_error'] = ff.std_error(all_configs[conf]['computation_time'], samples, boot_samples = 200)
-
 
         # print("metrics %s" % metrics)
         if metrics is not None:
@@ -316,10 +251,6 @@ def master():
     time_end = time.time()
     print('Run time in hours ', (time_end - time_start)/3600.)
 
-
-
-# if __name__ == "__main__":
-#   pass
 
 mpi.run(verbose=False)
 

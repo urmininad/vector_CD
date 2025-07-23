@@ -1,23 +1,25 @@
 import sys, os
 import numpy as np
-import pickle, pickle
+import pickle
 
-
-folder_name = os.path.expanduser('~') + '/Documents/Python/aggregation_validity/interimresults_ADAG/'
+if os.path.expanduser('~') == '/Users/urmininad':
+    folder_name = os.path.expanduser('~') + '/Documents/Python/aggregation_validity/interimresults_ADAG/'
+else:
+    print("Change path to local path where interim results for aggregation validity are stored")
+    folder_name = os.getcwd()+'/Interimresults_adag/'
 
 def get_counts(para_setup):
 
-    metrics = [ 'all_' + metric_type for metric_type in ['precision', 'recall']]    
-    metrics += [ 'adj_' + link_type + "_" + metric_type for link_type in ['anylink'] 
+    metrics = [ 'all_' + metric_type for metric_type in ['precision', 'recall']]
+    metrics += [ 'adj_' + link_type + "_" + metric_type for link_type in ['anylink']
                                                        for metric_type in ['precision', 'recall']]
-    metrics +=  [ 'edgemarks_' + link_type + "_" + metric_type for link_type in ['anylink'] 
+    metrics +=  [ 'edgemarks_' + link_type + "_" + metric_type for link_type in ['anylink']
                                                        for metric_type in ['precision', 'recall']]
-    metrics +=  [ metric_type + "_" + link_type for link_type in ['anylink'] 
+    metrics +=  [ metric_type + "_" + link_type for link_type in ['anylink']
                                 for metric_type in ['unoriented', 'conflicts']]
 
     metrics += ['computation_time']
     results = get_results(para_setup)
-    # print("##########",folder_name)
 
     if results is not None:
         orig_true_graphs = results['true_graphs']
@@ -76,7 +78,7 @@ def _get_match_score(true_link, pred_link):
     if true_link[2] == pred_link[2]:
         count += 1
     return count
-match_func = np.vectorize(_get_match_score, otypes=[int]) 
+match_func = np.vectorize(_get_match_score, otypes=[int])
 
 
 def _get_conflicts(pred_link):
@@ -89,7 +91,7 @@ def _get_conflicts(pred_link):
     if pred_link[2] == 'x':
         count += 1
     return count
-conflict_func = np.vectorize(_get_conflicts, otypes=[int]) 
+conflict_func = np.vectorize(_get_conflicts, otypes=[int])
 
 def _get_unoriented(true_link):
     if true_link == "": return 0
@@ -101,7 +103,7 @@ def _get_unoriented(true_link):
     if true_link[2] == 'o':
         count += 1
     return count
-unoriented_func = np.vectorize(_get_unoriented, otypes=[int]) 
+unoriented_func = np.vectorize(_get_unoriented, otypes=[int])
 
 
 def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, boot_samples=200):
@@ -113,7 +115,7 @@ def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, b
 
     pred_graphs = orig_pred_graphs
     true_graphs = orig_true_graphs
-    
+
     metrics_dict['adj_anylink_precision'] = (((true_graphs!="")*(pred_graphs!="")*any_mask).sum(axis=(1,2,3)),
                             ((pred_graphs!="")*any_mask).sum(axis=(1,2,3)) )
     metrics_dict['adj_anylink_recall'] = (((true_graphs!="")*(pred_graphs!="")*any_mask).sum(axis=(1,2,3)),
@@ -121,7 +123,7 @@ def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, b
     metrics_dict['all_precision'] = ((((true_graphs=="-->")*(pred_graphs=="-->")+(true_graphs=="<--")*(pred_graphs=="<--"))*any_mask).sum(axis=(1,2,3)),
                             ((pred_graphs!="")*any_mask).sum(axis=(1,2,3)) )
     metrics_dict['all_recall'] = ((((true_graphs=="-->")*(pred_graphs=="-->")+(true_graphs=="<--")*(pred_graphs=="<--"))*any_mask).sum(axis=(1,2,3)),
-                            ((true_graphs!="")*any_mask).sum(axis=(1,2,3)) )  
+                            ((true_graphs!="")*any_mask).sum(axis=(1,2,3)) )
     metrics_dict['edgemarks_anylink_precision'] = ((match_func(true_graphs, pred_graphs)*any_mask).sum(axis=(1,2,3)),
                                                         2.*((pred_graphs!="")*any_mask).sum(axis=(1,2,3)) )
     metrics_dict['edgemarks_anylink_recall'] = ((match_func(true_graphs, pred_graphs)*any_mask).sum(axis=(1,2,3)),
@@ -130,8 +132,8 @@ def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, b
                                                         2.*((true_graphs!="")*any_mask).sum(axis=(1,2,3)) )
     metrics_dict['conflicts_anylink'] = ((conflict_func(pred_graphs)*(any_mask)).sum(axis=(1,2,3)),
                                                             2.*((pred_graphs!="")*any_mask).sum(axis=(1,2,3)) )
-    
-    
+
+
     for metric in metrics_dict.keys():
 
         numerator, denominator = metrics_dict[metric]
@@ -146,7 +148,7 @@ def get_numbers(metrics, orig_true_graphs, orig_pred_graphs, computation_time, b
     metrics_dict['computation_time'] = (np.mean(np.array(computation_time)), np.percentile(np.array(computation_time), [5, 95]))
 
     return metrics_dict
-    
+
 
 if __name__ == '__main__':
 

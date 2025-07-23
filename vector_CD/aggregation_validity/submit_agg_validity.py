@@ -1,53 +1,29 @@
-import os, time, sys
+import os
 from os import listdir
 from os.path import isfile, join
 import subprocess
-import numpy as np
-import math
 from random import shuffle
-import pickle
 
-import socket
-
-submit = False
+submit = False # set to True and add another conditional at the end of code to run on cluster
 
 if os.path.expanduser('~') == '/home/b/b381872':
     mypath = '/home/b/b381872/work/bd1083/Interim_results/agg_validity/'
-
-else:
+elif os.path.expanduser('~') == '/Users/urmininad':
     mypath = '/Users/urmininad/Documents/Python/aggregation_validity/new_interim_results/'
     run_locally = True
+else:
+    mypath = os.getcwd() + '/Interimresults_agg_validity/'
+    run_locally = True
 
-
+### Change according to your setup
 num_jobs = 10
 run_time_hrs = 2
 run_time_min = 0
 num_cpus = 100
-
-samples = 100
-
+samples = 100 # Refers to number of repetitions
 verbosity = 0
 anyconfigurations = []
-
 overwrite = False
-
-###################################################################
-# # sample config = "10-5-0.1-0.4-0.1-5000-parcorr_maxcorr-comm-neg"
-# for group_size in [5]:#,10,20,50]:
-#     for n_vars in [5]:
-#         for min_coeff in [0.1]:
-#             for max_coeff in [0.4]:
-#                 for step_size in [0.1]:
-#                     for T in [500]:
-#                         for ci_test in ['parcorr_gcm_gmb']:
-#                             for method in ['ind']:
-#                                 for coeff_range in ['neg']:
-#                                     para_setup = (group_size,n_vars,min_coeff,max_coeff,step_size,T,ci_test,method,coeff_range)
-#                                     name = '%s-'*len(para_setup) % para_setup
-#                                     name = name[:-1]
-#                                     anyconfigurations += [name]
-#################################################################
-
 
 # sample_config = 'avg-mrf_ts-3-5-100-0.4-0-1.0-0.01-0-parcorr_gcm_gmb-0.3-0.5-1.0-0.4'
 for agg_method in ['avg']:#,'pca_1']:#['pca_1', 'pca_2','pca_3', 'pca_4']:
@@ -80,34 +56,24 @@ already_there = []
 configurations = []
 for conf in anyconfigurations:
     if conf not in configurations:
-        # print (conf + '.dat')
         conf = conf.replace("'","")
-
         if (overwrite == False) and (conf + '.dat' in current_results_files):
-            # print("Configuration %s already exists." % conf)
             already_there.append(conf)
             pass
         else:
-            # print("Does not exist")
             configurations.append(conf)
-
-        # print conf
-
 
 for conf in configurations:
     print(conf)
 
-
 num_configs = len(configurations)
 print("number of todo configs ", num_configs)
 print("number of existing configs ", len(already_there))
-
 chunk_length = min(num_jobs, num_configs)   # num_configs/num_jobs
 print("num_jobs %s" % num_jobs)
 print("chunk_length %s" % chunk_length)
 print("cpus %s" % num_cpus)
 print("runtime %02.d:%02.d:00" % (run_time_hrs, run_time_min))
-
 print("Shuffle configs to create equal computation time chunks ")
 shuffle(configurations)
 if num_configs == 0:
@@ -132,23 +98,19 @@ for config_chunk in split(configurations, chunk_length):
 
     print(max([len(chunk) for chunk in split(job_list, num_jobs)]))
 
-
     use_script = 'compute_agg_validity.py'
 
     if submit == False:
         submit_string = ["python", "compute_agg_validity.py", str(num_cpus), str(samples)] + config_chunk
-
         if run_locally:
             print("Run locally")
             process = subprocess.Popen(submit_string)  #,
             output = process.communicate()
 
-    elif submit and os.path.expanduser('~') == '/home/b/b381872':
+    elif submit and os.path.expanduser('~') == '/home/b/b381872': #DKRZ cluster
         submit_string = ['sbatch', '--ntasks', str(num_cpus), '--time', '%02.d:%02.d:00' % (run_time_hrs, run_time_min), 'dkrz_cluster_submit.sh', use_script + " %d %d %s" %(num_cpus, samples, config_string)]  # +  config_chunk
         print("Run on cluster")
         process = subprocess.Popen(submit_string)  #,
         output = process.communicate()
     else:
         print("Not submitted.")
-
-

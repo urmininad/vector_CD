@@ -1,31 +1,21 @@
 import numpy as np
-import math
-from itertools import combinations, product
-from collections import defaultdict, OrderedDict, Counter
-from scipy import stats, linalg
+from itertools import product
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.decomposition import PCA
 
 from tigramite.pcmci import PCMCI
 from tigramite.pcmci_base import PCMCIbase
-from tigramite import plotting as tp
-from tigramite.toymodels import structural_causal_processes as toys
-from tigramite.independence_tests.oracle_conditional_independence import OracleCI
 from tigramite.independence_tests.parcorr import ParCorr
-# from tigramite.independence_tests.parcorr_mult import ParCorrMult
-from vector_CD.cond_ind_tests.parcorr_mult_regularized import ParCorrMult
-
-
 import tigramite.data_processing as pp
-from sklearn.decomposition import PCA
 
 import vector_CD.data_generation.gen_data_vecCI_ext as gen
+from vector_CD.cond_ind_tests.parcorr_mult_regularized import ParCorrMult
 from .pcmci_dep_score import PCMCI as pcmci_condsets
-
 
 def lin_f(x):
 	return x
 
-# Global Arguements for linear non-time series model
+# Global Arguments for linear non-time series model
 #-----------------------------
 coupling_funcs = [lin_f]
 # auto_coeffs_array =  [[0], [0],[0]]
@@ -35,7 +25,7 @@ coupling_funcs = [lin_f]
 #-----------------------------
 
 #############################################################
-######################### Helper Funcs ######################
+##############        HELPER FUNCS           ##############
 #############################################################
 
 
@@ -87,8 +77,6 @@ def vector_vars_from_Narray(d_macro,d_micro):
             l+=j
     return vector_vars
 
-
-
 def aggregate_data(data, partition):
 
     for m,n in enumerate(partition):
@@ -98,8 +86,6 @@ def aggregate_data(data, partition):
         else:
             data_agg = np.vstack((data_agg,agg_m))
     return np.transpose(data_agg)
-
-
 
 def pc_alg(data_agg, pc_alpha,vector_vars = None, ci_test = 'parcorr_gcm_gmb', verbosity = 0,cr = True):
 
@@ -345,10 +331,11 @@ def coeff_avg_list(min_coeff,max_coeff,step_size, neg=True):
     return coeff_avg
 
 
-#############################################################
-######################### Main Funcs ########################
-#############################################################
+######################################################################
+####### MAIN FUNCS to compute aggregation consistency scores ########
+######################################################################
 
+# Indpendence consistency score
 def comp_ind_score(data,p_matrix,sepsets, N_array,pc_alpha, ci_test='parcorr_gcm_gmb'):
 
     #print(data.shape)
@@ -403,8 +390,6 @@ def comp_ind_score(data,p_matrix,sepsets, N_array,pc_alpha, ci_test='parcorr_gcm
                     ind_score+=1
 
     return ind_score,den
-
-
 
 def gen_comp_ind_score(data,p_matrix,sepsets, d_macro, d_micro, pc_alpha, ci_test='parcorr_gcm_gmb',tau_min = 0):
 
@@ -481,7 +466,7 @@ def gen_comp_ind_score(data,p_matrix,sepsets, d_macro, d_micro, pc_alpha, ci_tes
     return ind_score,den
 
 
-
+# Dependence consistency score
 def gen_comp_dep_score(data, graph_agg, condsets, d_macro, d_micro, pc_alpha, ci_test='parcorr_gcm_gmb', tau_min=0):
 
 
@@ -553,89 +538,6 @@ def gen_comp_dep_score(data, graph_agg, condsets, d_macro, d_micro, pc_alpha, ci
 
     return dep_score, den
 
-
-
-
-
-
-# def validity_score_list(N_array, min_coeff, max_coeff, step_size, T, method, pc_alpha, N_fine=None, neg_coeff=True, ci_test='parcorr_gcm_gmb'):
-
-# 	# # Linear non-time series model
-# 	# #-----------------------------
-# 	# coupling_funcs = [lin_f]
-# 	# auto_coeffs_array =  [[0], [0],[0]]
-# 	# tau_max = 0
-# 	# contemp_frac_array = [1.0, 1.0, 1.0]
-# 	# contemp_frac = 1.0
-# 	# #-----------------------------
-
-# 	coupling_coeffs = list(np.arange(min_coeff, max_coeff+0.1, step_size))
-# 	coupling_range = len(coupling_coeffs)
-# 	scores = np.zeros(coupling_range+1)
-# 	dens = np.zeros(coupling_range+1)
-# 	shd_to_true_graph = np.zeros(coupling_range+1)
-
-# 	print('average coeff', (np.array(coupling_coeffs)).mean())
-
-# 	for j in range(coupling_range +1):
-
-# 	    links_full, links_vec = gen.generate_random_contemp_vec_model(
-# 	    N_array,
-# 	    coupling_coeffs,
-# 	    coupling_funcs,
-# 	    auto_coeffs_array,
-# 	    tau_max,
-# 	    contemp_frac_array,
-# 	    contemp_frac,
-# 	    L_internal_density = None,
-# 	    L_external_density = None,
-# 	    random_state=None)
-
-# 	    N = len(links_full.keys())
-
-# 	    # Vector data
-# 	    data, nonstat = gen.generate_nonlinear_contemp_timeseries(links_full,
-# 	        T, noises=[np.random.randn for i in range(N)])
-# 	    true_graph = toys.links_to_graph(links_vec)
-
-# 	    # Aggregated data
-# 	    data_agg = aggregate_data(data, N_array)
-
-# 	    # PC-alg on aggregated data
-# 	    sepsets,p_matrix,graph,dag = pc_alg(data_agg,pc_alpha)
-
-# 	    if method == 'ind':
-# 	        # Compute independence score
-# 	        scores[j],dens[j] = comp_ind_score(data,p_matrix,sepsets,N_array,pc_alpha, ci_test)
-
-# 	    elif method == 'comm':
-# 	        if N_fine == None:
-# 	            raise ValueError("Specify fine partition for commutativity method")
-# 	        else:
-# 	            fine_vec_var = vectorize_to_fine(N_fine,N_array)
-# 	            data_agg_fine = aggregate_data(data, N_fine)
-# 	            sepsets_fine, p_matrix_fine, graph_fine, dag_fine = pc_alg(data_agg_fine, pc_alpha,vector_vars=fine_vec_var, ci_test=ci_test)
-# 	            scores[j] = shd(dag, dag_fine)
-
-# 	    shd_to_true_graph[j] = shd(true_graph,dag)
-
-# 	    if neg_coeff:
-# 	        if j < coupling_range:
-# 	            coupling_coeffs += [-c for c in [coupling_coeffs[j]]]
-# 	            #print(coupling_coeffs)
-# 	            #print('coupling_coeffs_list',j)
-# 	            print('average coeff', (np.array(coupling_coeffs)).mean())
-# 	    else:
-# 	        break
-
-# 	if method == 'ind':
-# 	    scores = scores/dens
-# 	    #Check: Remove NaNs??
-
-# 	print('---------------------------------------')
-
-
-# 	return scores,shd_to_true_graph
 
 ########################################################################
 ############################# Standard Error ###########################
