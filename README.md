@@ -7,7 +7,20 @@ The experiments are categorized by topic in the **Jupyter-notebooks** folder.
 2. *2_agg_validity.ipynb* illustrates the performance of the aggregation consistency scores (Section 7 in paper).
 3. *3_adag_wrapper.ipynb* illustrates the performance of `adag` (adaptive aggregation) wrapper (Section 7 and 8 in paper).
 4. *4_mult_CI_tests.ipynb* illustrates the performance of multivariate CI tests discussed in the Appendix D.1.
-# Notes
+# Notes 
+## Installation
+
+1. Create and activate a virtual environment to run the experiments in this repository.
+2. Clone the repository and install in editable mode:
+
+```bash
+git clone https://github.com/urmininad/vector_CD.git
+cd vector_CD
+pip install -e .
+```
+3. (Optional: Depending on the experiment being run): Install the SAVAR [python package](https://github.com/xtibau/savar) in the virtual environment. 
+
+## CD algorithms
 The causal discovery algorithms employed in the paper are the PC algorithm and the PCMCI(+) algorithm. 
 `Tigramite` [python package](https://github.com/jakobrunge/tigramite) is required to run many of the experiments.
 # References
