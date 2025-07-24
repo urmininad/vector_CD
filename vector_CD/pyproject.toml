@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vector_CD"
+version = "0.1.0"
+description = "A package for vector-valued causal discovery and consistency-guided aggregation"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+authors = [
+    { name = "Urmi Ninad" }
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "tigramite",
+    "matplotlib"
+  # Add other required libraries like "pandas", "matplotlib", etc.
+]
+
+[project.urls]
+Homepage = "https://github.com/urmininad/vector_CD"
+
+[tool.setuptools]
+packages = ["vector_CD"]
+include-package-data = true
