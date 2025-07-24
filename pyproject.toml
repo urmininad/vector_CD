@@ -17,7 +17,9 @@ dependencies = [
     "scipy",
     "scikit-learn",
     "tigramite",
-    "matplotlib"
+    "matplotlib",
+    "networkx",
+    "statsmodels"
   # Add other required libraries like "pandas", "matplotlib", etc.
 ]
 
